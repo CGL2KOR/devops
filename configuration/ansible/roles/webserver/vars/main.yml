@@ -1,0 +1,7 @@
+#SPDX-License-Identifier: MIT-0
+---
+# vars file for webserver
+#
+app_name: "RamanKhanna-DevSecOps Web Server"
+env: "ramankhanna-training"
+

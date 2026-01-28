@@ -1,0 +1,50 @@
+---
+- name: Base Server Configuration
+  hosts: vm1
+  become: yes
+  gather_facts: yes
+  
+  tasks:  
+  - name: Update apt cache
+    apt:
+      update_cache: yes
+      cache_valid_time: 3600
+  - name: Install base packages
+    apt:
+      name: 
+        - curl
+        - wget
+        - git
+        - unzip
+      state: present
+  - name: Install Apache web server
+    apt:
+      name: apache2
+      state: present
+  - name: Ensure Apache is running
+    service:
+      name: apache2
+      state: started
+      enabled: yes
+  - name: Deploy custom index.html
+    copy:
+      content: |
+          <html>
+          <head><title>DevSecOps Lab</title></head>
+          <body>
+            <h1>Server configured by Ansible</h1>
+            <p>Host: {{ ansible_hostname }}</p>
+            <p>Environment: DevSecOps Training</p>
+          </body>
+          </html>
+      dest: /var/www/html/index.html
+      owner: root
+      group: root
+      mode: '0644'
+
+      
+
+
+
+
+ 
