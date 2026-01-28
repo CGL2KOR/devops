@@ -1,0 +1,11 @@
+name: CI Basics
+
+on:
+ push:
+  branches:
+    - devopslab
+  pull_request:
+    branches:
+      - develop
+
+jobs:
