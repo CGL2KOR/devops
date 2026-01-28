@@ -9,3 +9,18 @@ on:
       - develop
 
 jobs:
+  build:
+    name: Basic CI Job
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Show repository structure
+        run: |
+          pwd
+          ls -la
+      - name: Check installed tools
+        run: |
+          git --version
+          bash --version
