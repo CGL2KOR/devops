@@ -47,7 +47,7 @@ jobs:
 
 
 # ------------------------
-# Stage 2: Docker Build
+# Stage 2: Docker Build (ONCE)
 # ------------------------
   docker_build:
     name: 🐳 Docker Build
@@ -57,12 +57,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 🐳 Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: 🐳 Build Docker image
         run: |
           docker build -t s3bucket:latest app/s3buket
+
+      - name: 📦 Save Docker image
+        run: |
+          docker save s3bucket:latest -o s3bucket.tar
+
+      - name: ⬆ Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: s3bucket-image
+          path: s3bucket.tar
 
 
 # ------------------------
@@ -74,19 +81,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: ⬇ Download image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: s3bucket-image
 
-      - name: 🐳 Build image again for scan
+      - name: 🐳 Load Docker image
         run: |
-          docker build -t s3bucket:latest app/s3buket
+          docker load -i s3bucket.tar
 
       - name: 🔎 Trivy image scan (monitoring mode)
         uses: aquasecurity/trivy-action@0.20.0
         with:
           image-ref: s3bucket:latest
           format: table
-          exit-code: 0          # ✅ NEVER fail pipeline
+          exit-code: 0
           severity: HIGH,CRITICAL
+
+
 # ------------------------
 # Stage 4: Publish Image
 # ------------------------
@@ -96,10 +108,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: ⬇ Download image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: s3bucket-image
 
-      - name: 🐳 Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: 🐳 Load Docker image
+        run: |
+          docker load -i s3bucket.tar
 
       - name: 🔐 Login to Docker Hub
         uses: docker/login-action@v3
@@ -107,9 +123,9 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: 🐳 Build Docker image
+      - name: 🏷 Tag image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/s3bucket:latest app/s3buket
+          docker tag s3bucket:latest ${{ secrets.DOCKER_USERNAME }}/s3bucket:latest
 
       - name: 📤 Push Docker image
         run: |
