@@ -8,17 +8,16 @@ on:
     branches:
       - devopslab
 
+# ------------------------
+# Stage 1: Build + Sonar
+# ------------------------
 jobs:
-  build:
-    name: Build, Scan & Dockerize
+  build_sonar:
+    name: 🏗️ Build & Sonar
     runs-on: ubuntu-latest
 
     steps:
-      - name: 🚀 Workflow started
-        run: echo "CI pipeline started on $(date)"
-
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -28,11 +27,6 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
 
-      - name: ☕ Verify Java & Maven
-        run: |
-          java -version
-          mvn -version
-
       - name: 💾 Cache Maven packages
         uses: actions/cache@v4
         with:
@@ -40,9 +34,6 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
-      # ------------------------
-      # Build + Sonar
-      # ------------------------
       - name: 🏗️ Maven build & Sonar scan
         working-directory: app/s3buket
         env:
@@ -54,9 +45,18 @@ jobs:
           -Dsonar.host.url=$SONAR_HOST_URL \
           -Dsonar.login=$SONAR_TOKEN
 
-      # ------------------------
-      # Docker build
-      # ------------------------
+
+# ------------------------
+# Stage 2: Docker Build
+# ------------------------
+  docker_build:
+    name: 🐳 Docker Build
+    needs: build_sonar
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
       - name: 🐳 Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -64,9 +64,22 @@ jobs:
         run: |
           docker build -t s3bucket:latest app/s3buket
 
-      # ------------------------
-      # Trivy scan
-      # ------------------------
+
+# ------------------------
+# Stage 3: Trivy Scan
+# ------------------------
+  trivy_scan:
+    name: 🔎 Trivy Security Scan
+    needs: docker_build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🐳 Build image again for scan
+        run: |
+          docker build -t s3bucket:latest app/s3buket
+
       - name: 🔎 Trivy image scan (HIGH,CRITICAL)
         uses: aquasecurity/trivy-action@0.20.0
         with:
@@ -74,6 +87,3 @@ jobs:
           format: table
           exit-code: 1
           severity: HIGH,CRITICAL
-
-      - name: ✅ Pipeline completed
-        run: echo "CI pipeline completed at $(date)"
