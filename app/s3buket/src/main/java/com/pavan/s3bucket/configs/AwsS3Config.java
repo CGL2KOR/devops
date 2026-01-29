@@ -2,18 +2,16 @@ package com.pavan.s3bucket.configs;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
 
 @Configuration
 public class AwsS3Config {
 
     @Bean
-    public AmazonS3 s3bucket() {
-        return AmazonS3ClientBuilder.standard()
-                .withRegion("ap-south-1")
-                .build();  
-        // credentials automatically picked from env / profile / IAM role
+    public S3Client s3Client() {
+        return S3Client.builder()
+                .region(Region.AP_SOUTH_1)
+                .build(); // credentials auto-loaded
     }
 }
