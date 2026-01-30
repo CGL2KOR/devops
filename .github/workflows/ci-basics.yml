@@ -123,10 +123,15 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: 🏷 Tag image
+      - name: 🏷 Tag image with commit id
         run: |
+          SHORT_SHA=${GITHUB_SHA::7}
+          echo "Using image tag: $SHORT_SHA"
+          docker tag s3bucket:latest ${{ secrets.DOCKER_USERNAME }}/s3bucket:$SHORT_SHA
           docker tag s3bucket:latest ${{ secrets.DOCKER_USERNAME }}/s3bucket:latest
 
       - name: 📤 Push Docker image
         run: |
+          SHORT_SHA=${GITHUB_SHA::7}
+          docker push ${{ secrets.DOCKER_USERNAME }}/s3bucket:$SHORT_SHA
           docker push ${{ secrets.DOCKER_USERNAME }}/s3bucket:latest
